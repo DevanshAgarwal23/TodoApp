@@ -13,6 +13,10 @@ import android.widget.TimePicker
 import androidx.annotation.RequiresApi
 import androidx.room.Room
 import kotlinx.android.synthetic.main.activity_task.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,11 +35,7 @@ class TaskActivity : AppCompatActivity(), View.OnClickListener {
     private val labels = arrayListOf("Personal", "Business", "Insurance", "Shopping", "Banking")
 
     val db by lazy{
-        Room.databaseBuilder(
-            this,
-            AppDataBase::class.java,
-            DB_NAME
-        )
+       AppDatabase.getDatabase(this)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,16 +71,40 @@ class TaskActivity : AppCompatActivity(), View.OnClickListener {
             R.id.timeEdt -> {
                 setTimeListener()
             }
+            R.id.saveBtn -> {
+                saveTodo()
+            }
         }
+    }
+
+
+    private fun saveTodo() {
+        val category = spinnerCategory.selectedItem.toString()
+        val title = titleInpLay.editText?.text.toString()
+        val description = taskInpLay.editText?.text.toString()
+
+        GlobalScope.launch(Dispatchers.Main) {
+            val id = withContext(Dispatchers.IO) {
+                return@withContext db.todoDao().insertTask(
+                        TodoModel(
+                                title,
+                                description,
+                                category,
+                                finalDate,
+                                finalTime
+                        )
+                )
+            }
+            finish()
+        }
+
     }
 
 
 
 
 
-
-
-
+    //For Time
     private fun setTimeListener() {
         myCalendar = Calendar.getInstance()
 
@@ -109,6 +133,9 @@ class TaskActivity : AppCompatActivity(), View.OnClickListener {
     }
 
 
+
+
+    //For Calender
     @RequiresApi(Build.VERSION_CODES.N)
     private fun setListener() {
         myCalendar = Calendar.getInstance()
